@@ -23,10 +23,20 @@ class Template(BaseModel):
     capabilities: List[str] = []
     input_schema: Optional[Dict[str, Any]] = None
 
-class CapabilitiesResponse(BaseModel):
-    version: str = "1.0"
-    provider: str
-    features: List[str]
+# --- Initialization Models ---
+class ImplementationInfo(BaseModel):
+    name: str
+    version: str
+
+class InitializeRequest(BaseModel):
+    protocolVersion: str
+    clientInfo: ImplementationInfo
+    capabilities: Optional[Dict[str, Any]] = None
+
+class InitializeResult(BaseModel):
+    protocolVersion: str
+    serverInfo: ImplementationInfo
+    capabilities: Optional[Dict[str, Any]] = None
     templates: List[Template]
 
 # --- Context Models ---
@@ -60,20 +70,18 @@ class AudioConfig(BaseModel):
 
 class RequestConfig(BaseModel):
     webhook_url: Optional[str] = None
-    return_fhir: bool = False
-    return_transcription: bool = True
+    # Flags removed in favor of explicit templates
 
 class ScribeRequest(BaseModel):
-    template_id: str
+    templates: List[str] = Field(..., description="List of template IDs to generate")
     audio_config: Optional[AudioConfig] = None
     context: Optional[ContextPayload] = None
     config: Optional[RequestConfig] = None
 
 # --- Response Models ---
 class ScribeOutput(BaseModel):
-    transcription: Optional[str] = None
-    structured_data: Optional[Dict[str, Any]] = None
-    fhir_bundles: Optional[List[Dict[str, Any]]] = None
+    # A map of template_id -> Result Object
+    results: Dict[str, Any] = {}
 
 class JobResult(BaseModel):
     job_id: str

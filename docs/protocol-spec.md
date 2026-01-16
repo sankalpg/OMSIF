@@ -9,20 +9,41 @@ This specification defines the HTTP/REST API for the Open Medical Scribe Integra
 All requests MUST include the `Authorization` header.
 `Authorization: Bearer <access_token>`
 
-## 3. Discovery
+## 3. Initialization Handshake
 
-### Get Capabilities
-Retrieve the list of available templates and service capabilities.
+Before any transcription can occur, the Client (EMR) and Server (Scribe) must negotiate capabilities and agree on the protocol version.
+
+### Initialize
+The Client initiates the handshake.
 
 **Request**
-`GET /capabilities`
+`POST /initialize`
+
+```json
+{
+  "protocolVersion": "2024-01-01",
+  "clientInfo": {
+    "name": "MyEMR",
+    "version": "4.5.0"
+  },
+  "capabilities": {
+    "sampling": {}
+  }
+}
+```
 
 **Response (200 OK)**
 ```json
 {
-  "version": "1.0",
-  "provider": "SuperScribe AI",
-  "features": ["sync", "async", "streaming_upload"],
+  "protocolVersion": "2024-01-01",
+  "serverInfo": {
+    "name": "SuperScribe AI",
+    "version": "1.2.0"
+  },
+  "capabilities": {
+    "logging": {},
+    "prompts": {} // In OMSIF context, this lists supported functionality
+  },
   "templates": [
     { "id": "soap_general", "name": "General SOAP" },
     { "id": "referral_letter", "name": "Referral Letter" }
@@ -30,25 +51,41 @@ Retrieve the list of available templates and service capabilities.
 }
 ```
 
-## 4. Transcription API
 
-### A. Synchronous Transcription
-Upload audio and metadata, wait for the result.
+## 4. Structuring API
+
+### A. Synchronous Structuring
+Upload audio and context, wait for the result.
 *Note: Only suitable for short audio (< 60s).*
 
 **Request**
 `POST /process`
 **Content-Type**: `multipart/form-data`
 
-*   `request`: (JSON String) `ScribeRequest` object (see Data Models).
+*   `request`: (JSON String) `StructRequest` object.
+    ```json
+    {
+      "templates": ["soap_v1", "verbatim_transcript"],
+      "context": { ... },
+      "config": { "webhook_url": "..." }
+    }
+    ```
 *   `file`: (Binary) Audio file.
 
 **Response**
-*   **200 OK**: Returns `ScribeResponse`.
-*   **400 Bad Request**: Validation error.
-*   **504 Gateway Timeout**: Processing took too long.
+*   **200 OK**: Returns `StructResponse`.
+    ```json
+    {
+      "job_id": "...",
+      "status": "completed",
+      "results": {
+        "soap_v1": { "subjective": "..." },
+        "verbatim_transcript": "Patient said..."
+      }
+    }
+    ```
 
-### B. Asynchronous Transcription
+### B. Asynchronous Structuring
 Submit job, receive ID, wait for Webhook.
 
 **Request**

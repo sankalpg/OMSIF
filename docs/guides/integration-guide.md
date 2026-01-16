@@ -2,9 +2,33 @@
 
 This guide provides deep technical details for implementing OMSIF. It is intended for EMR engineers building the client-side integration.
 
-## 1. Wire Traces: The Async Lifecycle
+## 1. Wire Traces: The Lifecycle
 
-The following traces show the exact HTTP interactions for a typical Asynchronous Transcription flow.
+### Step 0: Initialization Handshake
+
+**Request**
+```http
+POST /initialize HTTP/1.1
+Host: api.scribeprovider.com
+Content-Type: application/json
+
+{
+  "protocolVersion": "2024-01-01",
+  "clientInfo": { "name": "HospitalEMR", "version": "1.0.0" }
+}
+```
+
+**Response**
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "protocolVersion": "2024-01-01",
+  "serverInfo": { "name": "ScribePro", "version": "2.5" },
+  "templates": [ { "id": "soap_v1" } ]
+}
+```
 
 ### Step A: Submitting the Audio
 

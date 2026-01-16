@@ -7,17 +7,22 @@ import json
 
 client = TestClient(app)
 
-def test_discovery():
-    response = client.get("/capabilities")
+def test_handshake():
+    payload = {
+        "protocolVersion": "2024-01-01",
+        "clientInfo": {"name": "TestClient", "version": "1.0"}
+    }
+    response = client.post("/initialize", json=payload)
     assert response.status_code == 200
     data = response.json()
-    assert "sync" in data["features"]
+    assert data["protocolVersion"] == "2024-01-01"
+    assert data["serverInfo"]["name"] == "OMSIF Reference Implementation"
     assert len(data["templates"]) > 0
     assert data["templates"][0]["id"] == "soap_v1"
 
 def test_sync_processing():
     req_payload = {
-        "template_id": "soap_v1",
+        "templates": ["soap_v1", "transcript_v1"],
         "context": {"patient": {"name": "Test Patient"}}
     }
     
@@ -31,11 +36,13 @@ def test_sync_processing():
     
     # Sync should return completed result immediately (after simulated blocking)
     assert result["status"] == JobStatus.COMPLETED
-    assert "transcription" in result["output"]
+    # Check for multi-template results
+    assert "soap_v1" in result["output"]["results"]
+    assert "transcript_v1" in result["output"]["results"]
 
 def test_async_processing():
     req_payload = {
-        "template_id": "soap_v1",
+        "templates": ["soap_v1"],
         "config": {"webhook_url": "http://localhost/hook"}
     }
     files = {'file': ('test.wav', b'fakeaudiobytes', 'audio/wav')}
@@ -54,11 +61,11 @@ def test_async_processing():
     assert status_response.status_code == 200
     final_state = status_response.json()
     assert final_state["status"] == JobStatus.COMPLETED
-    assert "transcription" in final_state["output"]
+    assert "soap_v1" in final_state["output"]["results"]
 
 def test_chunked_session():
     # 1. Create Session
-    req_payload = {"template_id": "referral_v1"}
+    req_payload = {"templates": ["referral_v1"]}
     resp1 = client.post("/session", json=req_payload)
     assert resp1.status_code == 201
     session_id = resp1.json()["session_id"]

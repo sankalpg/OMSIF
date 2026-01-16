@@ -3,7 +3,7 @@ import json
 from typing import Optional
 
 from .models import (
-    CapabilitiesResponse, Template, ScribeRequest, 
+    InitializeRequest, InitializeResult, ImplementationInfo, Template, ScribeRequest, 
     JobResult, AsyncJobAccepted, SessionCreated, SessionCommitResponse,
     JobStatus
 )
@@ -11,12 +11,16 @@ from .services import JobManager, SessionManager
 
 app = FastAPI(title="OMSIF Reference Server", version="1.0.0")
 
-# --- Discovery ---
-@app.get("/capabilities", response_model=CapabilitiesResponse)
-def get_capabilities():
-    return CapabilitiesResponse(
-        provider="OMSIF Reference Implementation",
-        features=["sync", "async", "streaming_upload"],
+# --- Initialization ---
+@app.post("/initialize", response_model=InitializeResult)
+def initialize(request: InitializeRequest):
+    return InitializeResult(
+        protocolVersion="2024-01-01",
+        serverInfo=ImplementationInfo(name="OMSIF Reference Implementation", version="1.0.0"),
+        capabilities={
+            "logging": {},
+            "prompts": {} 
+        },
         templates=[
             Template(id="soap_v1", name="SOAP Note", description="Standard SOAP format"),
             Template(id="referral_v1", name="Referral Letter")
