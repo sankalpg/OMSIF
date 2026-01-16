@@ -15,17 +15,20 @@ The **Open Medical Scribe Integration Framework (OMSIF)** defines a standard pro
 
 ## High-Level Workflows
 
-### 1. Discovery
-The EMR queries the Scribe to understand what capabilities and templates are available. This allows the EMR to dynamically populate its UI with available note types.
+### 1. Initialization Handshake
+The interaction begins with a bidirectional handshake to exchange capabilities and versions.
 
 ```mermaid
 sequenceDiagram
     participant EMR
     participant Scribe
     
-    EMR->>Scribe: GET /capabilities
-    Scribe-->>EMR: 200 OK (List of Templates & Features)
+    EMR->>Scribe: POST /initialize (Client Info)
+    Scribe-->>EMR: 200 OK (Server Info + Templates)
+    
+    Note right of EMR: Connection Established
 ```
+
 
 ### 2. Transcription Modalities
 
